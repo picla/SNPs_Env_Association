@@ -17,19 +17,19 @@ options(stringsAsFactors = F)
 maf.thrs <- 0.05
 promoter.length <- 10000
 #gene.category <- tibble(gene = c('AT5G10140', 'AT5G45830'), category = c('GxT', 'GxT'))
-gene.category <- read_delim('/scratch-cbe/users/pieter.clauw/transcriptome/gwas/Category_genes.txt', delim = '\t')
+gene_cat <- read_delim('/groups/nordborg/user/pieter.clauw/Documents/Experiments/UltimateQandD/Results/Transcriptome/diffExpr_Sonia/Category_genes.txt', delim = '\t')
 araport11<- read.gff('/groups/nordborg/user/pieter.clauw/Documents/Source/Araport11/Araport11_GFF3_genes_transposons.201606.gff')
 chr_regions <- h5readAttributes('/groups/nordborg/user/pieter.clauw/Documents/Source/genotypes_for_pygwas/1.0.0/1001genomes_R_compatible/all_chromosomes_binary_gzip_attrs.hdf5', '/positions')$chr_regions
 
 G.file <- '/groups/nordborg/user/pieter.clauw/Documents/Source/genotypes_for_pygwas/1.0.0/1001genomes_R_compatible/all_chromosomes_binary_gzip_attrs.hdf5'
 chr_regions <- h5readAttributes(G.file, '/positions')$chr_regions
 
-G.output.h5 <- '/groups/nordborg/user/pieter.clauw/Documents/Source/genotypes_for_pygwas/1.0.0/1001genomes_R_compatible/all_chromosomes_binary_gzip_attrs_subsetTEST.hdf5'
+G.output.h5 <- '/groups/nordborg/user/pieter.clauw/Documents/Source/genotypes_for_pygwas/1.0.0/1001genomes_R_compatible/all_chromosomes_binary_gzip_attrs_GxE.hdf5'
 ```
 
 
 ```{r select genes}
-gene.selection <- filter(gene.category, category == 'GxT') %>%
+gene.selection <- filter(gene_cat, category == 'GxT') %>%
   pull(genes)
 
 ```
@@ -88,7 +88,7 @@ h5createFile(G.output.h5)
 
 # accessions
 # no accession selection here, thus stays the same
-h5write(accessions, G.output.h5, '/accessions')
+h5write(accessions, G.output.h5, '/accessions', write.attributes = T)
 
 
 # positions
@@ -118,11 +118,13 @@ for(chr.nr in c(1:5))
 }
 # order columns of SNP matrix
 snp.selection <- snp.selection[, chr_coord.sort]
-positions.new <- unlist(lapply(colnames(snp.selection), function(x){strsplit(x, '_')[[1]][2]}))
+positions.new <- unlist(lapply(colnames(snp.selection), function(x){as.numeric(strsplit(x, '_')[[1]][2])}))
 
 attr(positions.new, 'chrs') <- h5readAttributes(G.file, '/positions')$chrs
 attr(positions.new, 'chr_regions') <- chr_regions.new
-h5write(positions.new, G.output.h5, '/positions')
+h5write(positions.new, G.output.h5, '/positions', write.attributes = T)
+
+
 
 # snps
 snps <- snp.selection
@@ -132,7 +134,7 @@ rownames(snps) <- NULL
 attr(snps, 'data_format') <- h5readAttributes(G.file, '/snps')$data_format
 attr(snps, 'num_accessions') <- length(accessions)
 attr(snps, 'num_snps') <- ncol(snps)
-h5write(snps, G.output.h5, '/snps')
+h5write(snps, G.output.h5, '/snps', write.attributes = T)
 h5closeAll()
 ```
 
